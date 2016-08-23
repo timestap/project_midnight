@@ -1,0 +1,173 @@
+(print "Loading Standard Lib...")
+(def {fun} (\ {args body} {def (head args) (\ (tail args) body)}))
+(fun {unpack f xs} {eval (join (list f) xs)})
+(fun {pack f & xs} {f xs})
+(fun {len l} {if (== l {}) {0} {+ 1 (len (tail l))}})
+(fun {nth_elem n my_list} {if (== n 0) {head my_list} {nth_elem (- n 1) (tail(my_list)) }})
+
+; Atoms
+(def {nil} {})
+(def {true} 1)
+(def {false} 0)
+
+; First, Second, or Third Item in List
+(fun {fst l} { eval (head l) })
+(fun {snd l} { eval (head (tail l)) })
+(fun {trd l} { eval (head (tail (tail l))) })
+
+; Perform Several things in Sequence
+; Use case do (+ 20 10) (- 20 10)
+(fun {do & l} {
+  if (== l nil)
+    {nil}
+    {last l}
+})
+
+; Open new scope
+; not sure how this works, but opens a local context
+; e.g. let {do (= {x} 100) (x)}
+(fun {let b} {
+  ((\ {_} b) ())
+})
+
+(fun {flip f a b} {f b a})
+
+;Use case 
+;comp - (unpack *) {5 6}
+(fun {comp f g x} {f (g x)})
+
+; Last item in List
+(fun {last l} {nth_elem (- (len l) 1) l})
+
+; Take N items
+(fun {take n l} {
+  if (== n 0)
+    {nil}
+    {join (head l) (take (- n 1) (tail l))}
+})
+
+; Drop N items
+(fun {drop n l} {
+  if (== n 0)
+    {l}
+    {drop (- n 1) (tail l)}
+})
+
+; Split at N
+(fun {split n l} {list (take n l) (drop n l)})
+
+; Element of List
+(fun {elem x l} {
+  if (== l nil)
+    {false}
+    {if (== x (eval (head l))) {true} {elem x (tail l)}}
+})
+
+
+; Apply Function to List
+; basically a for-loop
+(fun {map f l} {
+  if (== l nil)
+    {nil}
+    {join (list (f (eval (head l)))) (map f (tail l))}
+})
+
+;Add 1 element for comparison in a for loop
+;Use case: filter (compare == 0) { 1 2 5 6 7} 
+(fun {compare f item_1 item_2} {
+	if (f item_1 item_2)
+		{true}
+		{false}
+})
+
+;Apply Filter to List
+(fun {filter f l} {
+  if (== l nil)
+    {nil}
+    {join (if (f (eval (head l))) {head l} {nil}) (filter f (tail l))}
+})
+
+; Fold Left
+(fun {foldl f z l} {
+  if (== l nil)
+    {z}
+    {foldl f (f z (eval (head l))) (tail l)}
+})
+
+;Sum and product of a list
+(fun {sum l} {foldl + 0 l})
+(fun {product l} {foldl * 1 l})
+
+; Default Case
+(def {otherwise} true)
+
+; essentially a case statement
+; usecase 
+; function {function_name input} 
+; select  
+;	{(== input value1) "return1"}
+;	{(== input value2) "return2"}
+;	{otherwise "return_default"}
+;	})
+
+(fun {select & cs} {
+  if (== cs nil)
+    {error "No Selection Found"}
+    {if (fst (fst cs)) {snd (fst cs)} {unpack select (tail cs)}}
+})
+
+(fun {case x & cs} {
+  if (== cs nil)
+    {error "No Case Found"}
+    {if (== x (fst (fst cs))) {snd (fst cs)} {
+      unpack case (join (list x) (tail cs))}}
+})
+
+;Example of case statement
+(fun {day-name x} {
+  case x
+    {0 "Monday"}
+    {1 "Tuesday"}
+    {2 "Wednesday"}
+    {3 "Thursday"}
+    {4 "Friday"}
+    {5 "Saturday"}
+    {6 "Sunday"}
+})
+
+; Fibonacci sequence 
+(fun {fib n} {
+  select
+    { (== n 0) 0 }
+    { (== n 1) 1 }
+    { otherwise (+ (fib (- n 1)) (fib (- n 2))) }
+})
+
+;Turn any number into 1
+(
+	fun {or_one num value}
+	{+ num (or 1 value)}
+)
+
+; Getting the length of a list using foldl
+(fun {len_foldl my_list}
+	{foldl or_one 0 my_list}
+)
+
+; Use map to check for equality
+; {x_value, counter}
+(
+	fun {check_eq my_list check_val}
+	{
+	if (== (fst my_list) check_val)
+	{join (head my_list) (list (+ 1 (snd my_list)))}
+	{my_list}
+})
+
+; Checking for existence using foldl
+; a list in the form 
+; {original value we want to check, number of instances detected}
+(
+	fun {elem_foldl x my_list}
+	{foldl check_eq x my_list}
+)
